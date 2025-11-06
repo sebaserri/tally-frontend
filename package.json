@@ -1,35 +1,31 @@
 {
-  "name": "coi-frontend",
-  "version": "0.1.0",
+  "name": "tally-frontend",
   "private": true,
+  "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
   },
   "dependencies": {
-    "@next/third-parties": "^15.1.3",
-    "@tanstack/react-query": "^5.90.2",
-    "@tanstack/react-query-devtools": "^5.90.2",
-    "next": "^15.1.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-slick": "^0.30.3",
-    "slick-carousel": "^1.8.1",
-    "zustand": "^5.0.8"
+    "@tanstack/react-query": "^5.51.19",
+    "@tanstack/react-router": "^1.62.3",
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/react-slick": "^0.23.13",
-    "cross-env": "^7.0.3",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "@tailwindcss/forms": "^0.5.10",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "@types/react": "^18.3.4",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
   }
 }

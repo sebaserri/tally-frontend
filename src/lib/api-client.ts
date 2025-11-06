@@ -1,79 +1,72 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-const CSRF_COOKIE = "coi_csrf";
-const CSRF_HEADER = "x-csrf-token";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
-function csrfHeader(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const v = getCookie(CSRF_COOKIE);
-  return v ? { [CSRF_HEADER]: v } : {};
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+export function readCookie(name: string): string | null {
+  const m = document.cookie.match(
+    "(?:^|; )" + name.replace(/([$?*|{}()[\]\\/+^])/g, "\\$1") + "=([^;]*)"
+  );
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
-import { getCookie } from "./cookies";
-
-async function rawFetch(path: string, init: RequestInit = {}) {
-  const headers = new Headers(init.headers || {});
-  const method = (init.method || "GET").toUpperCase();
-
-  if (!headers.has("Content-Type") && !(init.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    const csrf = csrfHeader();
-    Object.entries(csrf).forEach(([k, v]) => headers.set(k, v));
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-    credentials: "include",
-  });
-  return res;
-}
-
-let isRefreshing = false;
-let pending: Array<() => void> = [];
-
-async function ensureRefreshed() {
-  if (isRefreshing) {
-    await new Promise<void>((resolve) => pending.push(resolve));
-    return;
-  }
-  try {
-    isRefreshing = true;
-    const res = await rawFetch("/auth/refresh", { method: "POST" });
-    if (!res.ok) throw new Error("refresh-failed");
-  } finally {
-    isRefreshing = false;
-    pending.forEach((r) => r());
-    pending = [];
-  }
-}
+type FetchApiOptions = {
+  method?: HttpMethod;
+  body?: any;
+  headers?: Record<string, string>;
+  csrf?: boolean; // force or disable csrf header
+  signal?: AbortSignal;
+};
 
 export async function fetchApi<T = any>(
   path: string,
-  init: RequestInit = {}
+  opts: FetchApiOptions = {}
 ): Promise<T> {
-  let res = await rawFetch(path, init);
+  const url = `${API_BASE}${path}`;
+  const method = opts.method ?? (opts.body ? "POST" : "GET");
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(opts.headers || {}),
+  };
 
-  if (res.status === 401) {
-    try {
-      await ensureRefreshed();
-      res = await rawFetch(path, init); // reintento
-    } catch {
-      // si volvió a fallar, redirige a login (lado cliente)
-      if (typeof window !== "undefined") {
-        window.location.href = "/(auth)/sign-in";
-      }
-      throw new Error("Unauthorized");
-    }
+  let body: BodyInit | undefined = undefined;
+  if (opts.body instanceof FormData) {
+    body = opts.body;
+  } else if (opts.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(opts.body);
   }
+
+  const needsCsrf =
+    opts.csrf ??
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+
+  if (needsCsrf) {
+    const csrf = readCookie("tally_csrf");
+    if (csrf) headers["x-csrf-token"] = csrf;
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body,
+    credentials: "include",
+    signal: opts.signal,
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await res.json()
+    : await res.text();
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+    const message =
+      (data && (data.message || data.error || data.errors)) || res.statusText;
+    const err: any = new Error(
+      typeof message === "string" ? message : JSON.stringify(message)
+    );
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
-  const ct = res.headers.get("content-type") || "";
-  return ct.includes("application/json")
-    ? res.json()
-    : (res.text() as unknown as T);
+  return data as T;
 }
