@@ -7,6 +7,7 @@ import {
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode, useEffect, useState, type ComponentType } from "react";
 import { createRoot } from "react-dom/client";
+import { ConfirmProvider } from "./components/ConfirmDialog";
 import "./index.css";
 import { router } from "./router";
 import { ToastProvider } from "./ui/toast/ToastProvider";
@@ -68,7 +69,9 @@ function AppProviders() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <RouterProvider router={router} />
+        <ConfirmProvider>
+          <RouterProvider router={router} />
+        </ConfirmProvider>
       </ToastProvider>
       <ReactQueryDevtoolsGate />
     </QueryClientProvider>

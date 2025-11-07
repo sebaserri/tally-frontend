@@ -12,8 +12,10 @@ import { clsx } from "clsx";
 import type { ReactNode } from "react";
 import { Suspense, lazy, useEffect, useRef } from "react";
 import {
+  Breadcrumbs,
   LoadingOverlay,
   PageSkeleton,
+  SessionExpiredModal,
   ThemeToggle,
   UnverifiedEmailBanner,
 } from "./components";
@@ -165,6 +167,8 @@ function Shell() {
       <TopProgress />
       <SkipToContent />
       <AuthHeader />
+      <SessionExpiredModal />
+
       {/* Banner de email no verificado (solo mostrará algo si hay user en cache y emailVerified === false) */}
       <UnverifiedEmailBanner className="mt-2" />
       <main
@@ -173,6 +177,7 @@ function Shell() {
         tabIndex={-1}
         className="mx-auto max-w-6xl px-4 py-10 outline-none"
       >
+        <Breadcrumbs />
         <Suspense
           fallback={
             <div className="space-y-8">
@@ -241,12 +246,14 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  staticData: { breadcrumb: "Login" },
   component: () => <LoginPage />,
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
+  staticData: { breadcrumb: "Login" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ next: typeof s.next === "string" ? s.next : undefined } as {
       next?: string;
@@ -257,18 +264,21 @@ const loginRoute = createRoute({
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
+  staticData: { breadcrumb: "Register" },
   component: () => <RegisterPage />,
 });
 
 const forgotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
+  staticData: { breadcrumb: "Forgot Password" },
   component: () => <ForgotPasswordPage />,
 });
 
 const resetRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
+  staticData: { breadcrumb: "Reset Password" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -279,6 +289,7 @@ const resetRoute = createRoute({
 const verifyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/verify-email",
+  staticData: { breadcrumb: "Verify Email" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -289,6 +300,7 @@ const verifyRoute = createRoute({
 const resendRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/resend-verification",
+  staticData: { breadcrumb: "Resend Email Verification" },
   component: () => <ResendVerificationPage />,
 });
 
@@ -296,6 +308,7 @@ const resendRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/dashboard",
+  staticData: { breadcrumb: "Dashboard" },
   component: () => (
     <RequireAuth>
       <DashboardPage />
@@ -306,6 +319,7 @@ const dashboardRoute = createRoute({
 const profileRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/profile",
+  staticData: { breadcrumb: "Profile" },
   component: () => (
     <RequireAuth>
       <ProfilePage />
@@ -316,6 +330,7 @@ const profileRoute = createRoute({
 const vendorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/vendor",
+  staticData: { breadcrumb: "Vendor" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["VENDOR", "ADMIN"]}>
@@ -328,6 +343,7 @@ const vendorRoute = createRoute({
 const guardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/guard",
+  staticData: { breadcrumb: "Guard" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["GUARD", "ADMIN"]}>
@@ -340,6 +356,7 @@ const guardRoute = createRoute({
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
+  staticData: { breadcrumb: "Admin" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
