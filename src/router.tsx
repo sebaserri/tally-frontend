@@ -16,7 +16,6 @@ import {
   LoadingOverlay,
   PageSkeleton,
   SessionExpiredModal,
-  ThemeToggle,
   UnverifiedEmailBanner,
 } from "./components";
 import { useLogout, useSessionQuery } from "./state/session";
@@ -145,7 +144,6 @@ function AuthHeader() {
               <NavLink to="/register">Registrarme</NavLink>
             </>
           )}
-          <ThemeToggle />
         </nav>
       </div>
     </header>
@@ -246,14 +244,14 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  staticData: { breadcrumb: "Login" },
+  staticData: { breadcrumb: "" },
   component: () => <LoginPage />,
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  staticData: { breadcrumb: "Login" },
+  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ next: typeof s.next === "string" ? s.next : undefined } as {
       next?: string;
@@ -264,21 +262,21 @@ const loginRoute = createRoute({
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
-  staticData: { breadcrumb: "Register" },
+  staticData: { breadcrumb: "" },
   component: () => <RegisterPage />,
 });
 
 const forgotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
-  staticData: { breadcrumb: "Forgot Password" },
+  staticData: { breadcrumb: "" },
   component: () => <ForgotPasswordPage />,
 });
 
 const resetRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
-  staticData: { breadcrumb: "Reset Password" },
+  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -289,7 +287,7 @@ const resetRoute = createRoute({
 const verifyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/verify-email",
-  staticData: { breadcrumb: "Verify Email" },
+  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -300,7 +298,7 @@ const verifyRoute = createRoute({
 const resendRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/resend-verification",
-  staticData: { breadcrumb: "Resend Email Verification" },
+  staticData: { breadcrumb: "" },
   component: () => <ResendVerificationPage />,
 });
 

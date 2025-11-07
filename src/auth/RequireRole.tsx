@@ -45,7 +45,7 @@ export default function RequireRole(props: Props) {
       <div className="mx-auto max-w-xl">
         <Card padding="lg" className="space-y-2">
           <h2 className="text-lg font-semibold">Acceso denegado</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-500">
             No tenés permisos para ver esta sección.
           </p>
           <div className="mt-4">

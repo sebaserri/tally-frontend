@@ -120,7 +120,7 @@ export default function RegisterPage() {
     isPending || !!emailErr || !!passErr || !!confErr || !acceptTos;
 
   return (
-    <div className="mx-auto grid w-full max-w-md grid-cols-1 gap-6 px-2 sm:max-w-2xl">
+    <div className="mx-auto grid w-full max-w-md grid-cols-1 gap-6 px-2 sm:max-w-2xl dark:text-neutral-200">
       <PageTitle subtitle="Completá tus datos para crear una cuenta.">
         Crear cuenta
       </PageTitle>

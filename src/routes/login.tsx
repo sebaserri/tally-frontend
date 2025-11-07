@@ -218,15 +218,15 @@ export default function LoginPage() {
       </Card>
 
       <Card padding="md" className="flex items-center justify-between gap-4">
-        <p className="text-sm">¿No tenés cuenta?</p>
-        <Link to="/register" className="btn btn-ghost">
+        <p className="text-sm dark:text-neutral-200">¿No tenés cuenta?</p>
+        <Link to="/register" className="btn btn-ghost dark:text-neutral-200">
           Crear cuenta
         </Link>
       </Card>
 
       <Card padding="md" className="flex items-center justify-between gap-4">
-        <p className="text-sm">¿No te llegó el email?</p>
-        <Link to="/resend-verification" className="btn btn-ghost">
+        <p className="text-sm dark:text-neutral-200">¿No te llegó el email?</p>
+        <Link to="/resend-verification" className="btn btn-ghost dark:text-neutral-200">
           Reenviar verificación
         </Link>
       </Card>
