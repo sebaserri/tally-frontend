@@ -25,3 +25,17 @@ Aplicación React (Vite + TanStack Router/Query + Tailwind) para el flujo de aut
 ## Notas
 - El backend debe estar disponible con CORS habilitado para el `PUBLIC_APP_URL` configurado en `coi-backend`.
 - Si usas otra URL para el backend, actualiza `VITE_API_BASE_URL` y/o el proxy de `vite.config.ts` para evitar problemas de CORS o cookies.
+
+```
+onClick={async () => {
+        const ok = await confirm({
+          title: "Eliminar ítem",
+          message: "Esta acción no se puede deshacer. ¿Deseás continuar?",
+          confirmText: "Eliminar",
+        });
+        if (ok) {
+          // ... llamar API
+          show({ variant: "success", title: "Eliminado" });
+        }
+      }}
+```
