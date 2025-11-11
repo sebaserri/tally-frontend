@@ -13,7 +13,6 @@ import type { ReactNode } from "react";
 import { Suspense, lazy, useEffect, useRef } from "react";
 import RequireRole from "./auth/RequireRole";
 import {
-  Breadcrumbs,
   LoadingOverlay,
   PageSkeleton,
   SessionExpiredModal,
@@ -53,8 +52,9 @@ const VendorsManagementPage = lazy(
 const RequirementsManagementPage = lazy(
   () => import("./routes/admin/requirements_management")
 );
-const AuditLogsViewerPage = lazy(() => import("./routes/admin/audit-logs-viewer"));
-const SettingsPanelPage = lazy(() => import("./routes/admin/settings_panel"));
+const AuditLogsViewerPage = lazy(
+  () => import("./routes/admin/audit-logs-viewer")
+);
 
 // Guard Pages
 const GuardVendorsListPage = lazy(
@@ -201,7 +201,6 @@ function Shell() {
         tabIndex={-1}
         className="mx-auto max-w-6xl px-4 py-10 outline-none"
       >
-        <Breadcrumbs />
         <Suspense
           fallback={
             <div className="space-y-8">
@@ -268,14 +267,12 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  staticData: { breadcrumb: "" },
   component: () => <LoginPage />,
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ next: typeof s.next === "string" ? s.next : undefined } as {
       next?: string;
@@ -286,21 +283,18 @@ const loginRoute = createRoute({
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
-  staticData: { breadcrumb: "" },
   component: () => <RegisterPage />,
 });
 
 const forgotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
-  staticData: { breadcrumb: "" },
   component: () => <ForgotPasswordPage />,
 });
 
 const resetRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
-  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -311,7 +305,6 @@ const resetRoute = createRoute({
 const verifyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/verify-email",
-  staticData: { breadcrumb: "" },
   validateSearch: (s: Record<string, unknown>) =>
     ({ token: typeof s.token === "string" ? s.token : undefined } as {
       token?: string;
@@ -322,7 +315,6 @@ const verifyRoute = createRoute({
 const resendRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/resend-verification",
-  staticData: { breadcrumb: "" },
   component: () => <ResendVerificationPage />,
 });
 
@@ -330,7 +322,6 @@ const resendRoute = createRoute({
 const publicSubmitRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/submit/$token",
-  staticData: { breadcrumb: "Submit COI" },
   component: () => <PublicSubmitPage />,
 });
 
@@ -338,7 +329,6 @@ const publicSubmitRoute = createRoute({
 const profileRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/profile",
-  staticData: { breadcrumb: "Profile" },
   component: () => (
     <RequireAuth>
       <ProfilePage />
@@ -362,7 +352,6 @@ const adminRoute = createRoute({
 const adminCoiListRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/cois",
-  staticData: { breadcrumb: "COIs" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -375,7 +364,6 @@ const adminCoiListRoute = createRoute({
 const adminCoiDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/cois/$id",
-  staticData: { breadcrumb: "COI Detail" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -388,7 +376,6 @@ const adminCoiDetailRoute = createRoute({
 const adminRequestRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/request",
-  staticData: { breadcrumb: "Request COI" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -401,7 +388,6 @@ const adminRequestRoute = createRoute({
 const adminBuildingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/buildings",
-  staticData: { breadcrumb: "Buildings" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -414,7 +400,6 @@ const adminBuildingsRoute = createRoute({
 const adminVendorsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/vendors",
-  staticData: { breadcrumb: "Vendors" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -427,7 +412,6 @@ const adminVendorsRoute = createRoute({
 const adminRequirementsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/buildings/$id/requirements",
-  staticData: { breadcrumb: "Requirements" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -440,7 +424,6 @@ const adminRequirementsRoute = createRoute({
 const adminAuditRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/audit",
-  staticData: { breadcrumb: "Audit Logs" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["ADMIN"]}>
@@ -450,24 +433,10 @@ const adminAuditRoute = createRoute({
   ),
 });
 
-const adminSettingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin/settings",
-  staticData: { breadcrumb: "Settings" },
-  component: () => (
-    <RequireAuth>
-      <RequireRole anyOf={["ADMIN"]}>
-        <SettingsPanelPage />
-      </RequireRole>
-    </RequireAuth>
-  ),
-});
-
 // Guard routes
 const guardCheckRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/guard/check",
-  staticData: { breadcrumb: "Access Check" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["GUARD", "ADMIN"]}>
@@ -480,7 +449,6 @@ const guardCheckRoute = createRoute({
 const guardVendorsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/guard/vendors",
-  staticData: { breadcrumb: "Vendors List" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["GUARD", "ADMIN"]}>
@@ -494,7 +462,6 @@ const guardVendorsRoute = createRoute({
 const vendorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/vendor",
-  staticData: { breadcrumb: "Vendor Portal" },
   component: () => (
     <RequireAuth>
       <RequireRole anyOf={["VENDOR", "ADMIN"]}>
@@ -550,7 +517,6 @@ const routeTree = rootRoute.addChildren([
   adminVendorsRoute,
   adminRequirementsRoute,
   adminAuditRoute,
-  adminSettingsRoute,
   guardCheckRoute,
   guardVendorsRoute,
   vendorRoute,
