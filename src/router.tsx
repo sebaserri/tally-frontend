@@ -22,43 +22,43 @@ import {
 import { useLogout, useSessionQuery } from "./state/session";
 
 // --- Lazy pages ---
-const ForgotPasswordPage = lazy(() => import("./pages/forgot-password"));
-const LoginPage = lazy(() => import("./pages/login"));
-const RegisterPage = lazy(() => import("./pages/register"));
+const ForgotPasswordPage = lazy(() => import("./routes/forgot-password"));
+const LoginPage = lazy(() => import("./routes/login"));
+const RegisterPage = lazy(() => import("./routes/register"));
 const ResendVerificationPage = lazy(
-  () => import("./pages/resend-verification")
+  () => import("./routes/resend-verification")
 );
-const ResetPasswordPage = lazy(() => import("./pages/reset-password"));
-const VerifyEmailPage = lazy(() => import("./pages/verify-email"));
-const LogoutRoute = lazy(() => import("./pages/logout"));
-const ProfilePage = lazy(() => import("./pages/profile"));
+const ResetPasswordPage = lazy(() => import("./routes/reset-password"));
+const VerifyEmailPage = lazy(() => import("./routes/verify-email"));
+const LogoutRoute = lazy(() => import("./routes/logout"));
+const ProfilePage = lazy(() => import("./routes/profile"));
 
 // COI Pages
-const PublicSubmitPage = lazy(() => import("./pages/coi/public-submit"));
-const AdminCoiListPage = lazy(() => import("./pages/coi/admin-list"));
-const AdminCoiDetailPage = lazy(() => import("./pages/coi/admin-detail"));
-const AdminRequestCoiPage = lazy(() => import("./pages/coi/admin-request"));
-const GuardCheckPage = lazy(() => import("./pages/coi/guard-check"));
+const PublicSubmitPage = lazy(() => import("./routes/coi/public-submit"));
+const AdminCoiListPage = lazy(() => import("./routes/coi/admin-list"));
+const AdminCoiDetailPage = lazy(() => import("./routes/coi/admin-detail"));
+const AdminRequestCoiPage = lazy(() => import("./routes/coi/admin-request"));
+const GuardCheckPage = lazy(() => import("./routes/coi/guard-check"));
 
 // Vendor Pages
-const VendorPage = lazy(() => import("./pages/vendor"));
+const VendorPage = lazy(() => import("./routes/vendor"));
 
 // Admin Pages
 const BuildingsManagementPage = lazy(
-  () => import("./pages/admin/buildings/BuildingsManagement")
+  () => import("./routes/admin/buildings/BuildingsManagement")
 );
 const VendorsManagementPage = lazy(
-  () => import("./pages/admin/vendors/VendorsManagement")
+  () => import("./routes/admin/vendors/VendorsManagement")
 );
 const RequirementsManagementPage = lazy(
-  () => import("./pages/admin/RequirementsManagement")
+  () => import("./routes/admin/RequirementsManagement")
 );
-const AuditLogsViewerPage = lazy(() => import("./pages/admin/AuditLogsViewer"));
-const SettingsPanelPage = lazy(() => import("./pages/admin/SettingsPanel"));
+const AuditLogsViewerPage = lazy(() => import("./routes/admin/AuditLogsViewer"));
+const SettingsPanelPage = lazy(() => import("./routes/admin/SettingsPanel"));
 
 // Guard Pages
 const GuardVendorsListPage = lazy(
-  () => import("./pages/guard/GuardVendorsList")
+  () => import("./routes/guard/GuardVendorsList")
 );
 
 export type RouterContext = {};

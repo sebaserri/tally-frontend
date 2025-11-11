@@ -17,6 +17,9 @@ export interface COI {
   };
   producer?: string;
   insuredName?: string;
+  policyNumber?: string;
+  insurer?: string;
+  holder?: string;
   generalLiabLimit?: number;
   autoLiabLimit?: number;
   umbrellaLimit?: number;
