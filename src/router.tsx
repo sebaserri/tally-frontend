@@ -45,20 +45,20 @@ const VendorPage = lazy(() => import("./routes/vendor"));
 
 // Admin Pages
 const BuildingsManagementPage = lazy(
-  () => import("./routes/admin/buildings/BuildingsManagement")
+  () => import("./routes/admin/buildings/buildings-management")
 );
 const VendorsManagementPage = lazy(
-  () => import("./routes/admin/vendors/VendorsManagement")
+  () => import("./routes/admin/vendors/vendors-management")
 );
 const RequirementsManagementPage = lazy(
-  () => import("./routes/admin/RequirementsManagement")
+  () => import("./routes/admin/requirements_management")
 );
-const AuditLogsViewerPage = lazy(() => import("./routes/admin/AuditLogsViewer"));
-const SettingsPanelPage = lazy(() => import("./routes/admin/SettingsPanel"));
+const AuditLogsViewerPage = lazy(() => import("./routes/admin/audit-logs-viewer"));
+const SettingsPanelPage = lazy(() => import("./routes/admin/settings_panel"));
 
 // Guard Pages
 const GuardVendorsListPage = lazy(
-  () => import("./routes/guard/GuardVendorsList")
+  () => import("./routes/guard/guard-vendors-list")
 );
 
 export type RouterContext = {};
