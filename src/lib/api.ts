@@ -27,7 +27,7 @@ async function tryRefresh(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
     try {
-      const csrf = readCookie("tally_csrf");
+      const csrf = readCookie("proofholder_csrf");
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         headers: {
@@ -75,7 +75,7 @@ export async function fetchApi<T = any>(
     opts.csrf ?? ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
   if (needsCsrf) {
-    const csrf = readCookie("tally_csrf");
+    const csrf = readCookie("proofholder_csrf");
     if (csrf) headers["x-csrf-token"] = csrf;
   }
 

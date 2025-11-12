@@ -110,8 +110,8 @@ export default function RegisterPage() {
 
     show({
       variant: "success",
-      title: "Welcome to Tally!",
-      description: `Welcome ${data.email} to Tally!`,
+      title: "Welcome to ProofHolder!",
+      description: `Welcome ${data.email} to ProofHolder!`,
     });
 
     const redirectPath =

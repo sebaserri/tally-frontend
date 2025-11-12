@@ -123,7 +123,7 @@ function AuthHeader() {
     <header className="sticky top-0 z-40 border-b border-neutral-200/60 dark:border-neutral-800/60 backdrop-blur bg-white/70 dark:bg-neutral-950/70">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <Link to="/" className="font-semibold text-lg">
-          <span className="text-brand">Tally</span>
+          <span className="text-brand">ProofHolder</span>
         </Link>
         <nav className="text-sm flex items-center gap-2">
           {me ? (
@@ -213,7 +213,7 @@ function Shell() {
         </Suspense>
       </main>
       <footer className="py-10 text-center text-xs text-neutral-500">
-        &copy; {new Date().getFullYear()} Tally
+        &copy; {new Date().getFullYear()} ProofHolder
       </footer>
     </div>
   );
