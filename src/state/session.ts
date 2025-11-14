@@ -8,6 +8,7 @@ export type SessionUser = {
   role: Role;
   vendorId?: string;
   name?: string;
+  emailVerifiedAt?: string | null;
 };
 
 /**

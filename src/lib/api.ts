@@ -1,6 +1,9 @@
 // src/lib/api.ts
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
+const CSRF_COOKIE_NAME = "proofholder_csrf";
+const CSRF_HEADER_NAME = "x-csrf-token";
+
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type FetchApiOptions = {
   method?: HttpMethod;
@@ -68,7 +71,7 @@ async function tryRefresh(): Promise<boolean> {
 
   refreshPromise = (async () => {
     try {
-      const csrf = readCookie("proofholder_csrf");
+      const csrf = readCookie(CSRF_COOKIE_NAME);
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         headers: {
@@ -135,8 +138,8 @@ export async function fetchApi<T = any>(
     opts.csrf ?? ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
   if (needsCsrf) {
-    const csrf = readCookie("proofholder_csrf");
-    if (csrf) headers["x-csrf-token"] = csrf;
+    const csrf = readCookie(CSRF_COOKIE_NAME);
+    if (csrf) headers[CSRF_HEADER_NAME] = csrf;
   }
 
   /**

@@ -12,7 +12,7 @@ export default function UnverifiedEmailBanner({ className }: Props) {
   const [sent, setSent] = useState(false);
   const resend = useResendVerification();
 
-  if (!me || me?.emailVerified !== false) return null;
+  if (!me || me.emailVerifiedAt) return null; // null = no verificado
 
   const onResend = async () => {
     if (!me?.email || resend.isPending) return;

@@ -1,9 +1,8 @@
-import { useEffect } from "react";
-import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { SessionUser } from "../state/session";
-import { Card } from "../components";
-import { useQueryClient } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { Card, LoadingOverlay } from "../components";
+import { SessionUser, useSessionQuery } from "../state/session";
 
 export type Role = SessionUser["role"];
 
@@ -23,9 +22,10 @@ function hasNot(user: SessionUser, list: Role[]) {
 }
 
 export default function RequireRole(props: Props) {
-  const qc = useQueryClient();
-  const me = qc.getQueryData<SessionUser | null>(["me"]);
+  const { data: me, isLoading } = useSessionQuery({ enabled: true });
   const nav = useNavigate();
+
+  if (isLoading) return <LoadingOverlay />;
 
   // Si no hay sesión en cache, enviá a login (rutas protegidas deberían haberla seteado)
   useEffect(() => {
