@@ -142,7 +142,7 @@ export default function RegisterPage() {
               Email *
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
                 {MailIcon}
               </div>
               <input
@@ -176,7 +176,7 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Rol *
             </label>
-            <select {...register("role")} className="field">
+            <select {...register("role")} className="field text-black">
               <option value="ADMIN">ADMIN</option>
               <option value="VENDOR">VENDOR</option>
               <option value="GUARD">GUARD</option>
