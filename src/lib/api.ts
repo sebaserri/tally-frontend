@@ -21,10 +21,51 @@ export function readCookie(name: string): string | null {
 
 import { authEvents } from "./auth-events";
 
-let refreshPromise: Promise<boolean> | null = null;
+// ============================================================================
+// SISTEMA DE COLA PARA AUTO-REFRESH
+// ============================================================================
 
+type QueuedRequest = {
+  resolve: (value: any) => void;
+  reject: (error: any) => void;
+  retry: () => Promise<any>;
+};
+
+let refreshPromise: Promise<boolean> | null = null;
+let requestQueue: QueuedRequest[] = [];
+let isProcessingQueue = false;
+
+/**
+ * Procesa la cola de requests pendientes después de un refresh exitoso o fallido
+ * @param error - Si hay error, rechaza todos los requests; si es null, los reintenta
+ */
+function processQueue(error: Error | null = null): void {
+  if (isProcessingQueue) return;
+  isProcessingQueue = true;
+
+  const queue = [...requestQueue];
+  requestQueue = [];
+
+  queue.forEach((item) => {
+    if (error) {
+      item.reject(error);
+    } else {
+      // Reintentar el request original con las nuevas cookies
+      item.retry().then(item.resolve).catch(item.reject);
+    }
+  });
+
+  isProcessingQueue = false;
+}
+
+/**
+ * Intenta refrescar el token de autenticación
+ * @returns true si el refresh fue exitoso, false en caso contrario
+ */
 async function tryRefresh(): Promise<boolean> {
+  // Si ya hay un refresh en progreso, esperar a que termine
   if (refreshPromise) return refreshPromise;
+
   refreshPromise = (async () => {
     try {
       const csrf = readCookie("proofholder_csrf");
@@ -37,26 +78,45 @@ async function tryRefresh(): Promise<boolean> {
         },
         credentials: "include",
       });
-      if (!res.ok) return false;
-      // Si refresh OK, notificamos recuperación
+
+      if (!res.ok) {
+        const error = new Error("Token refresh failed");
+        processQueue(error);
+        return false;
+      }
+
+      // Refresh exitoso - procesar cola de requests pendientes
       authEvents.emit("authRecovered");
+      processQueue(null);
       return true;
-    } catch {
+    } catch (err) {
+      const error =
+        err instanceof Error ? err : new Error("Token refresh failed");
+      processQueue(error);
       return false;
     } finally {
-      // pequeño delay para permitir setear cookies antes de siguientes fetch
-      setTimeout(() => (refreshPromise = null), 0);
+      // Pequeño delay para permitir setear cookies antes de siguientes fetch
+      setTimeout(() => {
+        refreshPromise = null;
+      }, 100); // Aumentado a 100ms para mayor seguridad
     }
   })();
+
   return refreshPromise;
 }
+
+// ============================================================================
+// FETCH API PRINCIPAL
+// ============================================================================
 
 export async function fetchApi<T = any>(
   path: string,
   opts: FetchApiOptions = {}
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const method = (opts.method ?? (opts.body ? "POST" : "GET")).toUpperCase() as HttpMethod;
+  const method = (
+    opts.method ?? (opts.body ? "POST" : "GET")
+  ).toUpperCase() as HttpMethod;
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -79,6 +139,9 @@ export async function fetchApi<T = any>(
     if (csrf) headers["x-csrf-token"] = csrf;
   }
 
+  /**
+   * Función interna que ejecuta el fetch
+   */
   const doFetch = async () => {
     const res = await fetch(url, {
       method,
@@ -105,30 +168,76 @@ export async function fetchApi<T = any>(
     return data as T;
   };
 
+  // ============================================================================
+  // LÓGICA DE AUTO-REFRESH CON COLA
+  // ============================================================================
+
   try {
     return await doFetch();
   } catch (err: any) {
     const status = err?.status;
     const attemptRefresh = opts.attemptRefreshOn401 ?? true;
 
-    // Nunca intentes refresh en rutas de auth explícitas para evitar loops
-    const isAuthPath = /^\/auth\/(login|register|logout|forgot-password|reset-password|verify-email|resend-verification)/.test(
-      path
-    );
+    // Nunca intentes refresh en rutas de auth explícitas para evitar loops infinitos
+    const isAuthPath =
+      /^\/auth\/(login|register|logout|forgot-password|reset-password|verify-email|resend-verification)/.test(
+        path
+      );
 
-    if (
-      attemptRefresh &&
-      (status === 401 || status === 403) &&
-      !isAuthPath
-    ) {
-      const ok = await tryRefresh();
-      if (ok) {
-        // reintentar 1 vez
-        return await doFetch();
+    // Si es 401/403 y no es ruta de auth, intentar refresh
+    if (attemptRefresh && (status === 401 || status === 403) && !isAuthPath) {
+      // Si ya hay un refresh en progreso, agregar a la cola
+      if (refreshPromise) {
+        return new Promise<T>((resolve, reject) => {
+          requestQueue.push({
+            resolve,
+            reject,
+            retry: () => doFetch(),
+          });
+        });
       }
-      // refresh falló → avisar a la app (mostrará modal/banner y pedirá login)
-      authEvents.emit("authExpired");
+
+      // Intentar refresh
+      const refreshOk = await tryRefresh();
+
+      if (refreshOk) {
+        // Refresh exitoso - reintentar request original
+        return await doFetch();
+      } else {
+        // Refresh falló - avisar a la app para que muestre modal de re-login
+        authEvents.emit("authExpired");
+        throw err;
+      }
     }
+
+    // Para otros errores o si no aplica refresh, propagar error
     throw err;
   }
+}
+
+// ============================================================================
+// UTILIDADES ADICIONALES
+// ============================================================================
+
+/**
+ * Limpia la cola de requests pendientes (útil en logout o errores críticos)
+ */
+export function clearRequestQueue(): void {
+  const error = new Error("Request queue cleared");
+  requestQueue.forEach((item) => item.reject(error));
+  requestQueue = [];
+}
+
+/**
+ * Verifica si hay un refresh en progreso
+ */
+export function isRefreshingToken(): boolean {
+  return refreshPromise !== null;
+}
+
+/**
+ * Obtiene el número de requests en cola
+ */
+export function getQueuedRequestsCount(): number {
+  return requestQueue.length;
 }

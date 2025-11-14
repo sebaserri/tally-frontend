@@ -1,5 +1,3 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   AlertCircle,
@@ -14,8 +12,10 @@ import {
   User,
   XCircle,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { LoadingOverlay, OcrExtractionButton } from "../../components";
-import { API_BASE, fetchApi } from "../../lib/api";
+import { useApi } from "../../hooks/useApi";
+import { API_BASE } from "../../lib/api";
 import { COI, COIStatus } from "../../types";
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {
@@ -30,35 +30,36 @@ const formatDate = (value?: string) =>
 export default function COIDetails() {
   const { id } = useParams({ strict: false }) as { id?: string };
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  // Fetch COI
   const {
     data: coi,
-    isLoading,
+    loading: isLoading,
     error,
-  } = useQuery<COI>({
-    queryKey: ["coi", id],
-    queryFn: () => fetchApi<COI>(`/cois/${id}`),
-    enabled: Boolean(id),
+    execute: fetchCoi,
+  } = useApi<COI>(`/cois/${id}`, {
+    showErrorToast: true,
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: ({ status, notes }: { status: COIStatus; notes?: string }) =>
-      fetchApi(`/cois/${id}/review`, {
-        method: "PATCH",
-        body: { status, notes },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coi", id] });
-      queryClient.invalidateQueries({ queryKey: ["cois"] });
-      setShowRejectModal(false);
-      setRejectNotes("");
-    },
-  });
+  // Review COI (approve/reject)
+  const { loading: isReviewing, execute: executeReview } = useApi(
+    `/cois/${id}/review`,
+    {
+      showSuccessToast: true,
+      showErrorToast: true,
+    }
+  );
+
+  // Load COI on mount
+  useEffect(() => {
+    if (id) {
+      fetchCoi();
+    }
+  }, [id, fetchCoi]);
 
   const handleDownloadZip = async () => {
     if (!id) return;
@@ -85,13 +86,37 @@ export default function COIDetails() {
     }
   };
 
-  const handleApprove = () => {
-    reviewMutation.mutate({ status: "APPROVED" });
+  const handleApprove = async () => {
+    try {
+      await executeReview({
+        method: "PATCH",
+        body: JSON.stringify({ status: "APPROVED" }),
+      });
+      // Reload COI to show updated status
+      await fetchCoi();
+    } catch (err) {
+      // Error already handled by useApi
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectNotes.trim()) return;
-    reviewMutation.mutate({ status: "REJECTED", notes: rejectNotes.trim() });
+
+    try {
+      await executeReview({
+        method: "PATCH",
+        body: JSON.stringify({
+          status: "REJECTED",
+          notes: rejectNotes.trim(),
+        }),
+      });
+      // Reload COI and close modal
+      await fetchCoi();
+      setShowRejectModal(false);
+      setRejectNotes("");
+    } catch (err) {
+      // Error already handled by useApi
+    }
   };
 
   const coverage = useMemo(
@@ -125,7 +150,7 @@ export default function COIDetails() {
       <div className="mx-auto max-w-xl text-center py-16">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
         <p className="text-lg font-semibold">Unable to load COI</p>
-        <p className="text-sm text-neutral-500 mt-2">{(error as Error).message}</p>
+        <p className="text-sm text-neutral-500 mt-2">{error.message}</p>
         <button
           className="btn btn-primary mt-6"
           onClick={() => navigate({ to: "/admin/cois" })}
@@ -168,7 +193,9 @@ export default function COIDetails() {
         <div className="space-y-6 lg:col-span-2">
           <div className="card p-6 space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Certificate Information</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Certificate Information
+              </h2>
               <dl className="grid gap-4 sm:grid-cols-2">
                 <DetailItem
                   icon={<User className="h-4 w-4 text-brand" />}
@@ -312,9 +339,7 @@ export default function COIDetails() {
               </p>
               <OcrExtractionButton
                 coiId={coi.id}
-                onSuccess={() =>
-                  queryClient.invalidateQueries({ queryKey: ["coi", id] })
-                }
+                onSuccess={() => fetchCoi()}
               />
             </div>
           )}
@@ -325,15 +350,15 @@ export default function COIDetails() {
               <button
                 className="btn btn-success w-full"
                 onClick={handleApprove}
-                disabled={reviewMutation.isPending}
+                disabled={isReviewing}
               >
                 <CheckCircle className="h-4 w-4" />
-                {reviewMutation.isPending ? "Processing..." : "Approve"}
+                {isReviewing ? "Processing..." : "Approve"}
               </button>
               <button
                 className="btn btn-error w-full"
                 onClick={() => setShowRejectModal(true)}
-                disabled={reviewMutation.isPending}
+                disabled={isReviewing}
               >
                 <XCircle className="h-4 w-4" />
                 Reject
@@ -363,7 +388,8 @@ export default function COIDetails() {
             <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
               <h3 className="text-lg font-semibold">Reject COI</h3>
               <p className="text-sm text-neutral-500 mt-2">
-                Provide a reason for rejection. This will be shared with the vendor.
+                Provide a reason for rejection. This will be shared with the
+                vendor.
               </p>
             </div>
             <div className="p-6">
@@ -381,16 +407,16 @@ export default function COIDetails() {
                   setShowRejectModal(false);
                   setRejectNotes("");
                 }}
-                disabled={reviewMutation.isPending}
+                disabled={isReviewing}
               >
                 Cancel
               </button>
               <button
                 className="btn btn-error flex-1"
                 onClick={handleReject}
-                disabled={!rejectNotes.trim() || reviewMutation.isPending}
+                disabled={!rejectNotes.trim() || isReviewing}
               >
-                {reviewMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
+                {isReviewing ? "Rejecting..." : "Confirm Rejection"}
               </button>
             </div>
           </div>
@@ -401,7 +427,10 @@ export default function COIDetails() {
 }
 
 function StatusBadge({ status }: { status: COIStatus }) {
-  const config: Record<COIStatus, { label: string; className: string; icon: JSX.Element }> = {
+  const config: Record<
+    COIStatus,
+    { label: string; className: string; icon: JSX.Element }
+  > = {
     PENDING: {
       label: "Pending Review",
       className: "text-amber-700 bg-amber-100",
@@ -463,7 +492,13 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CheckboxField({ label, checked }: { label: string; checked?: boolean }) {
+function CheckboxField({
+  label,
+  checked,
+}: {
+  label: string;
+  checked?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2">
       <span

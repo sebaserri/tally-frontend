@@ -1,5 +1,4 @@
 // src/routes/coi/admin-list.tsx
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -12,29 +11,29 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
-import { Alert } from "../../components/Alert";
-import { Badge } from "../../components/Badge";
-import { Button } from "../../components/Button";
-import { Card } from "../../components/Card";
-import { Input } from "../../components/Input";
-import { Select } from "../../components/Select";
-import { fetchApi } from "../../lib/api";
+import { useEffect, useState } from "react";
+import { Alert, Badge, Button, Card, Input, Select } from "../../components";
+import { useApi } from "../../hooks/useApi";
 import type { COIListItem } from "../../types/coi.types";
 
 export default function AdminCoiListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Fetch COIs
+  // Fetch COIs using useApi
   const {
     data: cois,
-    isLoading,
+    loading: isLoading,
     error,
-  } = useQuery({
-    queryKey: ["cois"],
-    queryFn: () => fetchApi("/cois"),
+    execute,
+  } = useApi<COIListItem[]>("/cois", {
+    showErrorToast: true,
   });
+
+  // Load COIs on mount
+  useEffect(() => {
+    execute();
+  }, [execute]);
 
   if (isLoading) {
     return (
@@ -57,14 +56,13 @@ export default function AdminCoiListPage() {
           title="Error Loading COIs"
           icon={<AlertTriangle className="h-5 w-5" />}
         >
-          {(error as Error).message ||
-            "Failed to load certificates. Please try again."}
+          {error.message || "Failed to load certificates. Please try again."}
         </Alert>
       </div>
     );
   }
 
-  const coiList = (cois as any)?.data || (cois as COIListItem[]) || [];
+  const coiList = (cois as any)?.data || cois || [];
 
   // Filter COIs based on search and status
   const filteredCois = coiList.filter((coi: COIListItem) => {

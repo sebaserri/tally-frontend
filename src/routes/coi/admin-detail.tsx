@@ -1,5 +1,4 @@
 // src/routes/coi/admin-detail.tsx
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -15,59 +14,84 @@ import {
   User,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert } from "../../components/Alert";
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import OcrExtractionButton from "../../components/OcrExtractionButton";
-import { fetchApi } from "../../lib/api";
+import { useApi } from "../../hooks/useApi";
 import type { COI, COIStatus } from "../../types/coi.types";
 
 export default function AdminCoiDetailPage() {
   const { id } = useParams({ strict: false });
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [reviewNotes, setReviewNotes] = useState("");
 
   // Fetch COI details
   const {
     data: coi,
-    isLoading,
+    loading: isLoading,
     error,
-  } = useQuery({
-    queryKey: ["coi", id],
-    queryFn: () => fetchApi(`/cois/${id}`),
-    enabled: !!id,
+    execute: fetchCoi,
+  } = useApi<COI>(`/cois/${id}`, {
+    showErrorToast: true,
   });
 
   // Approve COI
-  const approveMutation = useMutation({
-    mutationFn: () =>
-      fetchApi(`/cois/${id}/approve`, {
-        method: "PATCH",
-        body: JSON.stringify({ notes: reviewNotes }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coi", id] });
-      queryClient.invalidateQueries({ queryKey: ["cois"] });
-      console.log("✓ COI approved");
-    },
+  const {
+    loading: isApproving,
+    execute: executeApprove,
+  } = useApi(`/cois/${id}/approve`, {
+    showSuccessToast: true,
+    successMessage: "COI approved successfully",
+    showErrorToast: true,
   });
 
   // Reject COI
-  const rejectMutation = useMutation({
-    mutationFn: () =>
-      fetchApi(`/cois/${id}/reject`, {
+  const {
+    loading: isRejecting,
+    execute: executeReject,
+  } = useApi(`/cois/${id}/reject`, {
+    showSuccessToast: true,
+    successMessage: "COI rejected successfully",
+    showErrorToast: true,
+  });
+
+  // Load COI on mount
+  useEffect(() => {
+    if (id) {
+      fetchCoi();
+    }
+  }, [id, fetchCoi]);
+
+  // Handle approve
+  const handleApprove = async () => {
+    try {
+      await executeApprove({
         method: "PATCH",
         body: JSON.stringify({ notes: reviewNotes }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coi", id] });
-      queryClient.invalidateQueries({ queryKey: ["cois"] });
-      console.log("✓ COI rejected");
-    },
-  });
+      });
+      // Reload COI to get updated status
+      await fetchCoi();
+    } catch (err) {
+      // Error already handled by useApi
+    }
+  };
+
+  // Handle reject
+  const handleReject = async () => {
+    try {
+      await executeReject({
+        method: "PATCH",
+        body: JSON.stringify({ notes: reviewNotes }),
+      });
+      // Reload COI to get updated status
+      await fetchCoi();
+    } catch (err) {
+      // Error already handled by useApi
+    }
+  };
 
   // Download all files as ZIP
   const downloadZip = () => {
@@ -80,7 +104,9 @@ export default function AdminCoiDetailPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading COI details...</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading COI details...
+          </p>
         </div>
       </div>
     );
@@ -119,6 +145,8 @@ export default function AdminCoiDetailPage() {
           (1000 * 60 * 60 * 24)
       )
     : null;
+
+  const isProcessing = isApproving || isRejecting;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -164,10 +192,13 @@ export default function AdminCoiDetailPage() {
         daysUntilExpiry <= 30 && (
           <Alert
             variant="warning"
-            title={`Expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? "s" : ""}`}
+            title={`Expires in ${daysUntilExpiry} day${
+              daysUntilExpiry !== 1 ? "s" : ""
+            }`}
             icon={<AlertTriangle className="h-5 w-5" />}
           >
-            This certificate will expire soon. Please ensure renewal is in progress.
+            This certificate will expire soon. Please ensure renewal is in
+            progress.
           </Alert>
         )}
 
@@ -425,11 +456,9 @@ export default function AdminCoiDetailPage() {
                     variant="success"
                     size="lg"
                     fullWidth
-                    onClick={() => approveMutation.mutate()}
-                    disabled={
-                      approveMutation.isPending || rejectMutation.isPending
-                    }
-                    loading={approveMutation.isPending}
+                    onClick={handleApprove}
+                    disabled={isProcessing}
+                    loading={isApproving}
                     loadingText="Approving..."
                     leftIcon={<CheckCircle className="h-5 w-5" />}
                   >
@@ -440,11 +469,9 @@ export default function AdminCoiDetailPage() {
                     variant="danger"
                     size="lg"
                     fullWidth
-                    onClick={() => rejectMutation.mutate()}
-                    disabled={
-                      approveMutation.isPending || rejectMutation.isPending
-                    }
-                    loading={rejectMutation.isPending}
+                    onClick={handleReject}
+                    disabled={isProcessing}
+                    loading={isRejecting}
                     loadingText="Rejecting..."
                     leftIcon={<XCircle className="h-5 w-5" />}
                   >

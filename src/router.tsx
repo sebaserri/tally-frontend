@@ -17,7 +17,6 @@ import {
   LoadingOverlay,
   Logo,
   PageSkeleton,
-  SessionExpiredModal,
   UnverifiedEmailBanner,
 } from "./components";
 import { useLogout, useSessionQuery } from "./state/session";
@@ -53,7 +52,7 @@ const VendorsManagementPage = lazy(
   () => import("./routes/admin/vendors/vendors-management")
 );
 const RequirementsManagementPage = lazy(
-  () => import("./routes/admin/requirements_management")
+  () => import("./routes/admin/requirements-management")
 );
 const AuditLogsViewerPage = lazy(
   () => import("./routes/admin/audit-logs-viewer")
@@ -235,7 +234,6 @@ function Shell() {
       <TopProgress />
       <SkipToContent />
       <AuthHeader />
-      <SessionExpiredModal />
       <UnverifiedEmailBanner className="mt-2" />
       <main
         id="main"

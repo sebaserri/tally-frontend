@@ -1,14 +1,12 @@
 // src/pages/coi/admin-request.tsx
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus, Search, Send } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoadingOverlay } from "../../components";
-import { useMutationToast } from "../../hooks/useMutationToast";
-import { fetchApi } from "../../lib/api";
+import { useApi } from "../../hooks/useApi";
 
 const requestSchema = z.object({
   buildingId: z.string().min(1, "Building is required"),
@@ -36,19 +34,41 @@ export default function AdminRequestCoiPage() {
   const [showNewVendorForm, setShowNewVendorForm] = useState(false);
 
   // Fetch buildings
-  const { data: buildings = [], isLoading: loadingBuildings } = useQuery<
-    Building[]
-  >({
-    queryKey: ["buildings"],
-    queryFn: () => fetchApi("/buildings"),
+  const {
+    data: buildings,
+    loading: loadingBuildings,
+    execute: fetchBuildings,
+  } = useApi<Building[]>("/buildings", {
+    showErrorToast: true,
   });
 
   // Search vendors
-  const { data: vendors = [], isLoading: loadingVendors } = useQuery<Vendor[]>({
-    queryKey: ["vendors", vendorSearch],
-    queryFn: () => fetchApi(`/vendors/search?q=${vendorSearch}`),
-    enabled: vendorSearch.length >= 2,
+  const {
+    data: vendors,
+    loading: loadingVendors,
+    execute: searchVendors,
+  } = useApi<Vendor[]>(`/vendors/search?q=${vendorSearch}`, {
+    showErrorToast: true,
   });
+
+  // Create COI request
+  const { loading: isCreatingRequest, execute: executeCreateRequest } = useApi(
+    "/coi/requests",
+    {
+      showSuccessToast: true,
+      successMessage:
+        "COI Request Sent - Vendor will receive an email with the submission link",
+      showErrorToast: true,
+    }
+  );
+
+  // Create vendor
+  const { loading: isCreatingVendor, execute: executeCreateVendor } =
+    useApi<Vendor>("/vendors", {
+      showSuccessToast: true,
+      successMessage: "Vendor created successfully",
+      showErrorToast: true,
+    });
 
   const {
     register,
@@ -68,60 +88,54 @@ export default function AdminRequestCoiPage() {
   const selectedBuilding = watch("buildingId");
   const selectedVendor = watch("vendorId");
 
-  // Create COI request mutation
-  const createRequestMutation = useMutationToast(
-    (data: RequestFormData) =>
-      fetchApi("/coi/requests", {
-        method: "POST",
-        body: data,
-      }),
-    {
-      success: {
-        title: "COI Request Sent",
-        description: "Vendor will receive an email with the submission link",
-      },
-      onSuccess: () => {
-        navigate({ to: "/admin/cois" });
-      },
-    }
-  );
+  // Load buildings on mount
+  useEffect(() => {
+    fetchBuildings();
+  }, [fetchBuildings]);
 
-  // Create vendor mutation
-  const createVendorMutation = useMutationToast(
-    (data: { legalName: string; contactEmail: string }) =>
-      fetchApi<Vendor>("/vendors", {
-        method: "POST",
-        body: data,
-      }),
-    {
-      success: {
-        title: "Vendor Created",
-        description: "New vendor has been added",
-      },
-      onSuccess: (data) => {
-        setValue("vendorId", data.id);
-        setShowNewVendorForm(false);
-      },
+  // Search vendors when search query changes
+  useEffect(() => {
+    if (vendorSearch.length >= 2) {
+      searchVendors();
     }
-  );
+  }, [vendorSearch, searchVendors]);
 
-  const onSubmit = (data: RequestFormData) => {
-    createRequestMutation.mutate(data);
+  const onSubmit = async (data: RequestFormData) => {
+    try {
+      await executeCreateRequest({
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      navigate({ to: "/admin/cois" });
+    } catch (err) {
+      // Error already handled by useApi
+    }
   };
 
-  const handleNewVendorSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleNewVendorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    createVendorMutation.mutate({
-      legalName: formData.get("legalName") as string,
-      contactEmail: formData.get("contactEmail") as string,
+
+    const newVendor = await executeCreateVendor({
+      method: "POST",
+      body: JSON.stringify({
+        legalName: formData.get("legalName") as string,
+        contactEmail: formData.get("contactEmail") as string,
+      }),
     });
+
+    if (newVendor) {
+      setValue("vendorId", newVendor.id);
+      setShowNewVendorForm(false);
+    }
   };
 
   if (loadingBuildings) return <LoadingOverlay />;
 
-  const building = buildings.find((b) => b.id === selectedBuilding);
-  const vendor = vendors.find((v) => v.id === selectedVendor);
+  const buildingsList = buildings || [];
+  const vendorsList = vendors || [];
+  const building = buildingsList.find((b) => b.id === selectedBuilding);
+  const vendor = vendorsList.find((v) => v.id === selectedVendor);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -143,7 +157,7 @@ export default function AdminRequestCoiPage() {
             <label className="block text-sm font-medium mb-2">Building</label>
             <select {...register("buildingId")} className="field">
               <option value="">Choose a building...</option>
-              {buildings.map((b) => (
+              {buildingsList.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name} - {b.address}
                 </option>
@@ -198,12 +212,12 @@ export default function AdminRequestCoiPage() {
                     <p className="text-sm text-neutral-500 text-center py-4">
                       Searching...
                     </p>
-                  ) : vendors.length === 0 ? (
+                  ) : vendorsList.length === 0 ? (
                     <p className="text-sm text-neutral-500 text-center py-4">
                       No vendors found. Try creating a new one.
                     </p>
                   ) : (
-                    vendors.map((v) => (
+                    vendorsList.map((v) => (
                       <button
                         key={v.id}
                         type="button"
@@ -281,9 +295,9 @@ export default function AdminRequestCoiPage() {
                 <button
                   type="submit"
                   className="btn btn-primary flex-1"
-                  disabled={createVendorMutation.isPending}
+                  disabled={isCreatingVendor}
                 >
-                  Create Vendor
+                  {isCreatingVendor ? "Creating..." : "Create Vendor"}
                 </button>
                 <button
                   type="button"
@@ -353,14 +367,10 @@ export default function AdminRequestCoiPage() {
         <button
           type="submit"
           className="btn btn-primary w-full"
-          disabled={
-            createRequestMutation.isPending ||
-            !selectedBuilding ||
-            !selectedVendor
-          }
+          disabled={isCreatingRequest || !selectedBuilding || !selectedVendor}
         >
           <Send className="h-4 w-4" />
-          Send COI Request
+          {isCreatingRequest ? "Sending..." : "Send COI Request"}
         </button>
       </form>
     </div>

@@ -11,6 +11,7 @@ import { ConfirmProvider } from "./components/ConfirmDialog";
 import "./index.css";
 import { router } from "./router";
 import { ToastProvider } from "./ui/toast/ToastProvider";
+import { AuthExpiredModal, ConnectionStatus, DebugPanel } from "./components";
 
 // Centralized QueryClient with sensible prod/dev defaults & logging
 const queryClient = new QueryClient({
@@ -72,6 +73,9 @@ function AppProviders() {
         <ConfirmProvider>
           <RouterProvider router={router} />
         </ConfirmProvider>
+        <ConnectionStatus />
+        <AuthExpiredModal />
+        <DebugPanel />
       </ToastProvider>
       <ReactQueryDevtoolsGate />
     </QueryClientProvider>

@@ -1,25 +1,32 @@
-// Event bus mínimo para notificar expiración y recuperación de sesión
-export type AuthEvents = {
-  authExpired: () => void;
-  authRecovered: () => void;
-};
+// src/lib/auth-events.ts
+type AuthEventType = "authExpired" | "authRecovered";
+type AuthListener = () => void;
 
-type Handler = (...args: any[]) => void;
+class AuthEvents {
+  private listeners: Map<AuthEventType, Set<AuthListener>> = new Map();
 
-class TinyEmitter<T extends Record<string, (...a: any[]) => void>> {
-  private map = new Map<keyof T, Set<Handler>>();
-
-  on<K extends keyof T>(type: K, cb: T[K]) {
-    if (!this.map.has(type)) this.map.set(type, new Set());
-    this.map.get(type)!.add(cb as Handler);
-    return () => this.off(type, cb);
+  emit(event: AuthEventType): void {
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      listeners.forEach((listener) => listener());
+    }
   }
-  off<K extends keyof T>(type: K, cb: T[K]) {
-    this.map.get(type)?.delete(cb as Handler);
+
+  on(event: AuthEventType, listener: AuthListener): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(listener);
+
+    // Retorna función de limpieza
+    return () => {
+      this.listeners.get(event)?.delete(listener);
+    };
   }
-  emit<K extends keyof T>(type: K, ...args: Parameters<T[K]>) {
-    this.map.get(type)?.forEach((cb) => (cb as any)(...args));
+
+  off(event: AuthEventType, listener: AuthListener): void {
+    this.listeners.get(event)?.delete(listener);
   }
 }
 
-export const authEvents = new TinyEmitter<AuthEvents>();
+export const authEvents = new AuthEvents();
